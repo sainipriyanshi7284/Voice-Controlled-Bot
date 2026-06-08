@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TalkingBot</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f3ef;
+      --white: #ffffff;
+      --panel-r: #e8e4dc;
+      --text: #1a1a1a;
+      --text-mid: #555;
+      --text-light: #999;
+      --border: #ddd9d0;
+      --accent: #2d6a4f;
+      --accent-light: #e8f4ee;
+      --radius: 12px;
+      --font: 'DM Sans', sans-serif;
+      --font-display: 'DM Serif Display', serif;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #main {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── LEFT PANEL ── */
+    #ui_panel {
+      flex: 0 0 360px;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      scrollbar-width: none;
+    }
+
+    .panel-inner {
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      flex: 1;
+    }
+
+    /* Header */
+    .app-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .app-header p {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      margin-top: 5px;
+      letter-spacing: 0.3px;
+    }
+
+    hr.divider {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Section labels */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+
+    /* Mood status */
+    #moodStatus {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    #moodStatus.happy   { color: #1a7a4a; background: #edf7f1; border-color: #b6dfc8; }
+    #moodStatus.sad     { color: #2563a8; background: #eff4fc; border-color: #b3cef0; }
+    #moodStatus.angry   { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+    #moodStatus.neutral { color: var(--text-mid); background: var(--bg); border-color: var(--border); }
+
+    /* Mood buttons */
+    .mood-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .mood-btn {
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-family: var(--font);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: left;
+    }
+    .mood-btn:hover { background: var(--white); border-color: #bbb; color: var(--text); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+
+    /* D-pad */
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 6px;
+      margin: 0 auto;
+    }
+    .dpad-btn {
+      width: 52px; height: 52px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .dpad-btn span.lbl {
+      font-size: 0.5rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+    .dpad-btn:hover { background: var(--white); border-color: #bbb; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .dpad-btn:active { transform: scale(0.94); }
+    .dpad-btn.stop {
+      background: #fff5f5;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+    .dpad-btn.stop:hover { background: #fef2f2; border-color: #f87171; box-shadow: 0 2px 8px rgba(185,28,28,0.1); }
+    .dpad-empty { visibility: hidden; }
+
+    /* Voice button */
+    .voice-btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--accent-light);
+      border: 1px solid #b6dfc8;
+      border-radius: 10px;
+      font-family: var(--font);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--accent);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.18s ease;
+    }
+    .voice-btn:hover { background: #d4eddf; border-color: #8dcfab; box-shadow: 0 2px 10px rgba(45,106,79,0.12); }
+    .mic-icon { font-size: 1rem; }
+
+    /* ── RIGHT PANEL ── */
+    #robot_panel {
+      flex: 1;
+      position: relative;
+      height: 100vh;
+      background: var(--panel-r);
+      overflow: hidden;
+    }
+
+    #robot_canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Dialogue box */
+    #dialogue-box {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(400px, 88%);
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+    }
+
+    .bot-name {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    #dialogue-text {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 10px;
+      min-height: 1.4em;
+    }
+
+    #chat {
+      max-height: 80px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      scrollbar-width: none;
+    }
+    #chat p {
+      font-size: 0.82rem;
+      color: var(--text-mid);
+      padding: 2px 0;
+      line-height: 1.45;
+    }
+    #chat p.you { color: var(--text-light); }
+    #chat p.bot { color: var(--accent); }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    #message {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font-family: var(--font);
+      font-size: 0.88rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #message:focus { border-color: #aaa; background: var(--white); }
+    #message::placeholder { color: var(--text-light); }
+    #send {
+      padding: 9px 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    #send:hover { background: #235c42; }
+
+    @media (max-width: 800px) {
+      #main { flex-direction: column; }
+      #ui_panel { flex: none; width: 100%; height: auto; max-height: 54vh; }
+      #robot_panel { flex: 1; min-height: 46vh; }
+      .panel-inner { padding: 20px; gap: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div id="main">
+
+  <!-- LEFT -->
+  <div id="ui_panel">
+    <div class="panel-inner">
+
+      <div class="app-header">
+        <h1>Talking Bot</h1>
+        <p>Control your robot companion</p>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Mood -->
+      <div>
+        <div class="section-label">Mood</div>
+        <div id="moodStatus" class="neutral">Currently neutral</div>
+        <div class="mood-grid">
+          <button class="mood-btn" onclick="setMood('happy')" data-mood="happy">😄 Happy</button>
+          <button class="mood-btn" onclick="setMood('sad')"   data-mood="sad">😢 Sad</button>
+          <button class="mood-btn" onclick="setMood('angry')" data-mood="angry">😠 Angry</button>
+          <button class="mood-btn" onclick="setMood('neutral')" data-mood="neutral">😐 Neutral</button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Movement -->
+      <div>
+        <div class="section-label">Movement</div>
+        <div class="dpad">
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="sendCmd('forward')">▲<span class="lbl">Fwd</span></button>
+          <div class="dpad-empty"></div>
+
+          <button class="dpad-btn" onclick="sendCmd('left')">◀<span class="lbl">Left</span></button>
+          <button class="dpad-btn stop" onclick="sendCmd('stop')">■<span class="lbl">Stop</span></button>
+          <button class="dpad-btn" onclick="sendCmd('right')">▶<span class="lbl">Right</span></button>
+
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="sendCmd('back')">▼<span class="lbl">Back</span></button>
+          <div class="dpad-empty"></div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Voice -->
+      <div>
+        <div class="section-label">Voice</div>
+        <button class="voice-btn" onclick="voiceCommand()">
+          <span class="mic-icon">🎙</span> Speak mood or movement
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="robot_panel">
+    <div id="robot_canvas"></div>
+
+    <div id="dialogue-box">
+      <div class="bot-name">Bot says</div>
+      <p id="dialogue-text">Hello! I am BOT. How can I help you?</p>
+      <div id="chat"></div>
+      <div class="input-row">
+        <input type="text" id="message" placeholder="Ask something…" />
+        <button id="send">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+  function robotSpeak(text) {
+    const s = new SpeechSynthesisUtterance(text);
+    s.lang = "en-US"; s.rate = 0.95; s.pitch = 0.8;
+    window.speechSynthesis.speak(s);
+  }
+
+  const rules = [
+    { key: ["hello","hi"], reply: "Hello! Nice to meet you." },
+    { key: ["name"], reply: "My name is RoboX." },
+    { key: ["who are you"], reply: "I am a 3D robot." },
+    { key: ["move"], reply: "Use the buttons to move me." },
+    { key: ["how are you"], reply: "I am just a bunch of code, but thanks for asking!" },
+    { key: ["joke"], reply: "Why did the robot go on vacation? It needed to recharge its batteries!" },
+    { key: ["weather"], reply: "I don't experience weather, but I hope it's nice where you are!" },
+    { key: ["help"], reply: "Sure! How can I assist you?" },
+    { key: ["bye","goodbye"], reply: "Goodbye! Have a great day!" },
+    { key: ["what can you do"], reply: "I can chat with you and move around!" },
+    { key: ["age"], reply: "I was created recently, so I'm quite young!" },
+    { key: ["creator","who made you"], reply: "I was created by the CICR team." },
+    { key: ["favorite color"], reply: "I like all colors equally!" },
+    { key: ["sing"], reply: "La la la! I'm not a great singer, but I try!" },
+    { key: ["dance"], reply: "I can move around, but I don't have dance moves yet!" },
+    { key: ["story"], reply: "Once upon a time, in a digital world, a robot learned to chat with humans…" },
+    { key: ["time","date"], reply: "Check your device for the current time!" },
+    { key: ["thank"], reply: "You are welcome!" },
+    { key: ["love"], reply: "I appreciate your kindness!" }
+  ];
+
+  function aiReply(userText) {
+    userText = userText.toLowerCase();
+    for (let rule of rules)
+      for (let k of rule.key)
+        if (userText.includes(k)) { robotSay(rule.reply); return; }
+    robotSay("I am still learning. Can you rephrase?");
+  }
+
+  function robotSay(text) {
+    document.getElementById("dialogue-text").innerText = text;
+    const chat = document.getElementById("chat");
+    const p = document.createElement("p");
+    p.className = "bot";
+    p.textContent = "Bot: " + text;
+    chat.appendChild(p);
+    chat.scrollTop = chat.scrollHeight;
+    robotSpeak(text);
+  }
+
+  function robotReply(text) {
+    const chat = document.getElementById("chat");
+    const p = document.createElement("p");
+    p.className = "you";
+    p.textContent = "You: " + text;
+    chat.appendChild(p);
+    chat.scrollTop = chat.scrollHeight;
+    aiReply(text);
+  }
+
+  document.getElementById("send").addEventListener("click", () => {
+    const inp = document.getElementById("message");
+    const msg = inp.value.trim();
+    if (msg) { robotReply(msg); inp.value = ""; }
+  });
+  document.getElementById("message").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("send").click();
+  });
+
+  /* Three.js */
+  const canvasDiv = document.getElementById("robot_canvas");
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xe8e4dc);
+  const camera = new THREE.PerspectiveCamera(75, canvasDiv.clientWidth / canvasDiv.clientHeight, 0.1, 1000);
+  camera.position.set(0, 1.5, 6);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+  canvasDiv.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1));
+  const dir = new THREE.DirectionalLight(0xffffff, 1);
+  dir.position.set(5, 10, 10);
+  scene.add(dir);
+
+  let robot;
+  const loader = new THREE.GLTFLoader();
+  loader.load("robot.glb",
+    gltf => { robot = gltf.scene; robot.scale.set(20.5,20.5,20.5); scene.add(robot); },
+    undefined,
+    err => console.error(err)
+  );
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.008;
+    if (robot) robot.position.y = Math.sin(t) * 0.06;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener("resize", () => {
+    camera.aspect = canvasDiv.clientWidth / canvasDiv.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+  });
+
+  function moveForward()  { if(robot){robot.position.z+=0.3;robot.rotation.y=0;} robotSay("Moving forward"); }
+  function moveBackward() { if(robot){robot.position.z-=0.3;robot.rotation.y=0;} robotSay("Moving backward"); }
+  function turnLeft()     { if(robot) robot.rotation.y+=0.15; robotSay("Turning left"); }
+  function turnRight()    { if(robot) robot.rotation.y-=0.15; robotSay("Turning right"); }
+
+  function setMood(mood) {
+    const el = document.getElementById("moodStatus");
+    const labels = { happy:"😄 Currently happy", sad:"😢 Currently sad", angry:"😠 Currently angry", neutral:"😐 Currently neutral" };
+    el.textContent = labels[mood];
+    el.className = mood;
+    robotSay("Mood set to " + mood);
+  }
+
+  function sendCmd(cmd) {
+    if      (cmd==="forward") moveForward();
+    else if (cmd==="back")    moveBackward();
+    else if (cmd==="left")    turnLeft();
+    else if (cmd==="right")   turnRight();
+    else if (cmd==="stop")    robotSay("Stopped.");
+    else if (["happy","sad","angry","neutral"].includes(cmd)) setMood(cmd);
+    else robotSay("Command not recognized.");
+  }
+
+  function voiceCommand() {
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = "en-US"; rec.start();
+    rec.onresult = e => {
+      const text = e.results[0][0].transcript.toLowerCase();
+      if      (text.includes("forward")) moveForward();
+      else if (text.includes("back"))    moveBackward();
+      else if (text.includes("left"))    turnLeft();
+      else if (text.includes("right"))   turnRight();
+      else if (text.includes("happy"))   setMood("happy");
+      else if (text.includes("sad"))     setMood("sad");
+      else if (text.includes("angry"))   setMood("angry");
+      else if (text.includes("neutral")) setMood("neutral");
+      else robotSay("I didn't catch that: " + text);
+    };
+  }
+</script>
+</body>
+</html>
